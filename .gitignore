@@ -1,0 +1,36 @@
+# Ignore everything by default
+*
+
+# Un-ignore essential root metadata files
+!.gitignore
+!LICENSE
+!CHANGELOG.md
+!README.md
+
+# Un-ignore documentation files (moved to root)
+!portfolio-overview.md
+!technical-deep-dive.md
+!design-system.md
+!performance-seo-analytics.md
+
+# Explicitly ignore everything else (code, config, assets)
+admin/
+blog/
+landing/
+portfolio/
+shared/
+.well-known/
+firebase.json
+firestore.indexes.json
+firestore.rules
+.htaccess
+index.html
+favicon.svg
+robots.txt
+sitemap.xml
+*.zip
+node_modules/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
