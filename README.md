@@ -1,4 +1,6 @@
-# [Alberto Cortés - Portfolio]
+# Alberto Cortés – UX & App Designer | Portfolio
+🌐 **Live site:** [albertocortesba.com](https://albertocortesba.com)
+🔒 **Source code:** Maintained in a private repository.
 
 A premium, full-stack portfolio experience designed to showcase the intersection of UX/UI excellence and technical implementation. This project features a high-performance 3D showcase, an integrated blog system, and a custom-built administration suite.
 
