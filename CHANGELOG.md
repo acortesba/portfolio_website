@@ -5,6 +5,94 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.2] - 2026-06-07
+
+### Fixed
+- **Huge LCP & Speed Index on Mobile (Critical Performance)**
+  - **Issue:** LCP was ~12s, FCP ~7s, Speed Index ~8.4s. The root cause was ~400KB of synchronous Firebase SDK scripts in `<head>` blocking the browser from painting anything, plus ~20 more synchronous scripts in `<body>`.
+  - **Fix:** Moved Firebase SDK scripts and 17 local scripts to `defer`. Changed external CDN scripts to `defer`. Changed VT323 Google Font to a `preload` pattern. Removed a duplicate `emailjs` script tag.
+  - **Why:** Synchronous scripts block the HTML parser. By deferring them, the browser can parse the HTML and render the visual page immediately, vastly improving perceived load times and Core Web Vitals. External scripts specifically use `defer` (instead of `async`) to guarantee they execute in order and are fully available before our local `DOMContentLoaded` event handlers rely on them (fixing a bug where hero animations crashed because GSAP wasn't ready).
+
+- **Missing Charset Declaration**
+  - **Issue:** `<meta charset="UTF-8">` was placed after a large inline theme script.
+  - **Fix:** Moved the charset declaration to be the very first element inside `<head>`.
+  - **Why:** The browser must know the character encoding before parsing any content—especially inline scripts—to prevent "charset sniffing" vulnerabilities, decoding delays, or parsing errors that can break the page logic.
+
+- **788 KiB of Unused JavaScript on Page Load**
+  - **Issue:** Massive amounts of unused code (~750KB+) were downloaded on the initial page load, slowing down the site.
+  - **Fix:** Replaced static Three.js imports with dynamic `await import()` calls in `project-model-loader.js` and `playgroundSection.js`. Removed a duplicate Firebase v11 Modular SDK import from `contactSection.js` and hooked the contact form into the existing global v8 Compat instance.
+  - **Why:** Three.js is a huge library only needed if a user explicitly opens the 3D viewer or playground. Lazy-loading it saves ~600KB of upfront bandwidth. Similarly, downloading Firebase v11 when v8 was already loaded globally was a huge waste. Reusing existing instances and lazy-loading strictly when needed saves bandwidth, battery life, and main-thread parse time.
+
+- **BIOS Loader Flash on Return Visits (Medium)**
+  - **Issue:** The loading screen flashed briefly for returning visitors even though it was supposed to be completely skipped.
+  - **Fix:** The skip logic was rewritten to inject `<style>.bios-overlay{display:none!important}</style>` into the `<head>` immediately, rather than waiting for DOM events.
+  - **Why:** Waiting for `DOMContentLoaded` to hide an element means the browser will paint the element first, causing an annoying visual flash (FOUC). Injecting CSS synchronously before the first paint guarantees the element is never rendered at all.
+
+- **Admin Rich Text Editor — VT323 Font Not Applied to All Elements (Low)**
+  - **Issue:** Texts created via the admin dashboard's rich text editor were falling back to browser default serif fonts instead of the project's VT323 monospace font.
+  - **Fix:** Added catch-all `font-family: 'VT323', monospace` rules (e.g., `.block-text-content *`).
+  - **Why:** When users format text in `contenteditable` areas, the browser automatically injects random tags (`<div>`, `<span>`, `<font>`, etc.). A catch-all CSS rule forces all these dynamically generated, unpredictable elements to inherit the correct typography, ensuring a consistent design aesthetic.
+
+### Changed
+- **`portfolio/index.html`** — Complete script loading strategy overhaul: Firebase SDK moved to deferred body scripts; all non-critical scripts get `defer` or `async`; font loading changed to preload+swap pattern; duplicate emailjs removed.
+- **`portfolio/js/biosOverlay.js`** — `sessionStorage` skip path rewritten: injects inline `<style>` to hide overlay before paint instead of waiting for DOM.
+- **`portfolio/js/project-model-loader.js`** — Migrated to dynamic Three.js imports.
+- **`portfolio/js/playgroundSection.js`** — Removed unused static Three.js imports.
+- **`portfolio/js/contactSection.js`** — Removed duplicate Firebase v11 Modular SDK imports; migrated to use global v8 Compat instance.
+- **`admin/css/projects.css`** — Added `.block-text-content *` and `.preview-text-block.rich-text *` catch-all `font-family` rules.
+- **`portfolio/css/projects-new.css`** — Added `.text-content.rich-text *` catch-all `font-family` rule.
+
+---
+
+## [1.18.1] - 2026-06-07
+
+### Added
+- **Rich Text Editor for Admin Projects (Enhancement):** Replaced the plain `<textarea>` in the admin dashboard's project text editor with a toolbar + `contenteditable` div. The toolbar supports Bold, Italic, Heading (H1/H2), Paragraph, Bullet List, Numbered List, Link insertion, and Clear Formatting — all using the browser's native `document.execCommand()` API (no library dependency). Content is stored as HTML in Firestore.
+
+### Changed
+- **`admin/js/projects.js`** — `renderFolders()`: Text block template now renders a `.block-text-toolbar` with formatting buttons above a `contenteditable` div instead of a `<textarea>`. Added `execFormat()`, `execBlock()`, and `insertLink()` helper methods to `ProjectsManager`. `renderPreviewContent()` now renders text blocks with the `rich-text` class.
+- **`admin/css/projects.css`** — Added `.block-text-toolbar`, toolbar button, `.toolbar-divider` styles. Updated `.block-text-content` from `resize: vertical` textarea behaviour to `contenteditable` div behaviour (`overflow-y: auto`, `max-height: 400px`, `border-radius: 0 0 6px 6px`). Added placeholder pseudo-element for empty state. Added rich text element styles (`h3`, `h4`, `p`, `ul`, `ol`, `a`, `strong`, `em`) inside both the editor and preview modal.
+- **`portfolio/js/projects-portfolio.js`** — `renderFolderContent()`: Text blocks now render as `<div class="text-content rich-text">` with `sanitizeHtml()` applied. Added `sanitizeHtml()` method that strips `<script>` tags, `on*` event handlers, and `javascript:` protocol URLs while preserving all formatting HTML.
+- **`portfolio/css/projects-new.css`** — Added `.text-content.rich-text` display styles for `h3`, `h4`, `p`, `strong`, `em`, `ul`/`ol`, `li`, and `a` elements. Headings use `--accent-primary` / `--accent-secondary` colours for visual hierarchy. Links are underlined with hover colour transition.
+
+---
+
+## [1.18.0] - 2026-06-06
+
+### Fixed
+- **CV/Resume — Professional Experience not sorted newest-to-oldest (Medium):** Entries in the Professional Experience (and Education) sections were displayed in insertion order (the generic `order` field) rather than chronological order. Added a client-side sort after grouping by category: items marked "current" float to the top, then remaining items are sorted by `startDate` descending (newest first). Non-date categories (Skills, Tools & Software, Languages) remain sorted by the `order` field as intended.
+
+### Added
+- **3D Model Skeleton Loading (Enhancement):** Project folders with 3D models now show a theme-aware shimmer skeleton with a pulsing wireframe cube while the model loads from Firebase Storage. The skeleton fades out smoothly (0.4s) once the model is ready, and is removed on failure. Respects `prefers-reduced-motion` by disabling shimmer and spin animations.
+
+### Changed
+- **`portfolio/js/resume.js`** — `loadResumeData()`: After the `reduce` grouping step, `professional_experience` and `education` arrays are now sorted with a comparator that prioritises `current: true` entries, then orders by `startDate` descending. Items without a `startDate` sink to the bottom.
+- **`portfolio/css/projects-new.css`** — Added `.model-skeleton`, `.model-skeleton-cube` rules with `modelShimmer`, `skeletonSpin`, and `skeletonPulse` keyframe animations. Uses `--bg-secondary`, `--border-color`, and `--accent-primary` CSS variables for full theme compatibility.
+- **`portfolio/js/projects-portfolio.js`** — `renderProjectFolder()`: Skeleton `<div>` injected alongside `<canvas>` for folders with 3D models. `init3DModel()`: Skeleton is faded out and removed on successful load, or immediately removed on failure/error.
+- **`portfolio/css/projects-new.css`** — `.project-modal-content`: Changed from `max-width: min(90%, 900px)` / `max-height: 90vh` to a fixed `80vh × 80vh` square layout (`width: min(80vh, 90%); height: 80vh`), giving the modal a consistent, spacious size.
+
+---
+
+## [1.17.0] - 2026-05-05
+
+### Fixed
+- **Project Modal – 3D Model Not Visible (`project-model-loader.js`):**
+  - Completely isolated the native `.obj` model scale from the floating animation logic by wrapping models inside a `THREE.Group`.
+  - The model is shifted internally by `-center` so its geometric center is perfectly locked to `(0,0,0)`.
+  - The `THREE.Group` container is then scaled dynamically to fit exactly `1.8` units (a 1.2x size increase), and all floating/breathing animations are applied safely to the container.
+  - The model's base rotation is now statically set to `Y: -90º` (left) so models natively facing the side will now face the user.
+  - The camera distance is now computed dynamically using the model's bounding sphere radius and the camera's Field of View (`Math.abs(radius / Math.sin(fov / 2)) * 1.5`), guaranteeing the model always fits perfectly in frame without any visual distortion.
+  - Expanded the physical `<canvas>` element boundaries to 120% via CSS (and increased the Three.js internal `renderer.setSize` proportionately) to ensure extreme zoom levels don't get clipped by the hard edges of the canvas when the model spins.
+- **Floating 3D Model Folders (`projects-new.css`):**
+  - Removed all borders, border-radiuses, and box-shadows from the `.folder-icon` container and its hover states so the 3D models float cleanly on the webpage.
+- **Project Modal – Text Formatting Not Respected (`projects-portfolio.js` & `projects-new.css`):**
+  - Updated text block rendering in `renderFolderContent()` to use `white-space: pre-wrap; margin-bottom: 15px;`.
+  - This natively preserves all line breaks and paragraph spacing entered in the admin dashboard, removing the need to split/join `<p>` tags and solving the bug where blank lines were collapsed.
+  - Tightened `.modal-body` padding from `30px` to `20px` to reduce empty negative space around the edges of the modal content.
+  - Capped the entire modal's `.project-modal-content` width to `min(90%, 900px)` (previously `80%` unbounded), completely eliminating the massive empty horizontal whitespace on the right side of left-aligned text blocks on wide desktop monitors.
+
+---
+
 ## [1.16.9] - 2026-05-03
 
 ### Fixed
