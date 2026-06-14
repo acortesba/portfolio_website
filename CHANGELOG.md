@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.3] - 2026-06-14
+
+### Fixed
+- **Project Modal Text Displayed as Single Wall of Text**
+  - **Issue:** Text content inside project modal tabs (Overview, Features, License, etc.) was rendered as a single continuous block with no paragraphs or line breaks, making it unreadable.
+  - **Fix:** Updated the `sanitizeHtml()` function in `projects-portfolio.js` to detect plain-text content (legacy projects stored without HTML formatting tags) and automatically convert double newlines into `<p>` paragraph breaks and single newlines into `<br>` tags.
+  - **Why:** Older projects in Firestore were saved as plain text with raw `\n` newlines instead of proper HTML. The browser collapses raw newlines into whitespace, so without block-level HTML tags or a `white-space: pre-wrap` rule the text appeared as one unbroken block. The fix intelligently detects plain text vs. rich HTML content so it works for both legacy and new projects.
+
+### Changed
+- **`portfolio/js/projects-portfolio.js`** — `sanitizeHtml()` now auto-converts plain-text newlines into HTML paragraphs for legacy project content.
+
+---
+
 ## [1.18.2] - 2026-06-07
 
 ### Fixed
