@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.4] - 2026-10-04
+
+### Added
+- **Contact Form Character Limiter**
+  - **Feature:** Added native `maxlength` enforcement and live visual character counters to all input fields and dynamic textareas in the contact form.
+  - **Why:** To improve user experience by preventing them from typing past the limit instead of only showing an error after submission, and to enforce payload limits for security.
+- **Security Documentation**
+  - **Added:** `06-security.md` detailing character limits and XSS sanitization measures.
+
+---
+
 ## [1.18.3] - 2026-06-14
 
 ### Fixed

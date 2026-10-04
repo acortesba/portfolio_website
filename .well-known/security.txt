@@ -1,0 +1,7 @@
+# Security Contact for albertocortesba.com
+# https://securitytxt.org/
+
+Contact: mailto:alberto@albertocortesba.com
+Preferred-Languages: en, es
+Canonical: https://albertocortesba.com/.well-known/security.txt
+Expires: 2027-02-15T00:00:00.000Z

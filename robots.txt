@@ -1,0 +1,9 @@
+# robots.txt for albertocortesba.com
+# Last updated: February 2026
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /portfolio/components/
+
+Sitemap: https://albertocortesba.com/sitemap.xml
